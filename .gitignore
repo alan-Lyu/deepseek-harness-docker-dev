@@ -7,7 +7,6 @@ __pycache__/
 *.so
 .Python
 env/
-build/
 develop-eggs/
 dist/
 *.egg-info/
@@ -22,6 +21,8 @@ tmp/
 *.log
 *.pid
 
+build/authorized_keys
+
 # Docker directories
 workspace/
 
@@ -30,3 +31,4 @@ workspace/
 .agent/
 *.md
 !README*.md
+!AGENTS.md
