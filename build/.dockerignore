@@ -1,5 +1,4 @@
 *
 !Dockerfile
-!authorized_keys
 !docker-entrypoint.sh
 !dsh-launcher-package.json

@@ -114,18 +114,14 @@ RUN set -eux; \
     chmod 0440 /etc/sudoers.d/developer; \
     mkdir -p /home/developer/.ssh /home/developer/.cargo /home/developer/workspace; \
     chmod 700 /home/developer/.ssh; \
+    install -o developer -g developer -m 0600 /dev/null /home/developer/.ssh/authorized_keys; \
     chown -R developer:developer /home/developer
-
-# Configure SSH public-key authentication.
-COPY --chown=developer:developer authorized_keys \
-    /home/developer/.ssh/authorized_keys
 
 # Provide an independent launcher manifest while keeping DSH's working directory in the mounted workspace.
 COPY --chown=developer:developer dsh-launcher-package.json \
     /home/developer/.dsh-launcher/package.json
 
-RUN chmod 600 /home/developer/.ssh/authorized_keys \
-    && chown -R developer:developer /home/developer/.dsh-launcher \
+RUN chown -R developer:developer /home/developer/.dsh-launcher \
     && install -d -m 0755 /run/sshd /etc/ssh/sshd_config.d \
     && printf '%s\n' \
        'Port 2222' \

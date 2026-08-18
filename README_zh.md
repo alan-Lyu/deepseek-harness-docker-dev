@@ -12,7 +12,7 @@
 
 ### 准备工作
 
-宿主机需要 Linux、Docker Engine、Compose v2、AppArmor、SSH 密钥对，以及访问软件包和源码仓库的网络条件。只将用于登录的公钥放入 `build/authorized_keys`，不要加入私钥或 API token。
+宿主机需要 Linux、Docker Engine、Compose v2、AppArmor、SSH 密钥对，以及访问软件包和源码仓库的网络条件。私钥始终保留在宿主机上；运行时公钥注入方法见[首次运行指南](docs/README_FIRST_RUN.md)。
 
 启动服务前，在宿主机安装 AppArmor 配置：
 
@@ -27,10 +27,10 @@ sudo aa-status | grep deepseek-harness
 ```sh
 docker compose config
 docker compose build --build-arg DSH_REF=master
-docker compose up -d
+SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose up -d
 ```
 
-`DSH_REF` 可以指定 DSH 的分支或标签；也可以通过构建参数将容器内 developer 的 UID/GID 与宿主机工作区所有者对齐。
+`DSH_REF` 可以指定 DSH 的分支或标签；也可以通过构建参数将容器内 developer 的 UID/GID 与宿主机工作区所有者对齐。公钥验证后保存在 `dsh-data` 中，后续启动无需再次提供 `SSH_PUB_KEY`。
 
 浏览器访问 `http://127.0.0.1:3080`，或通过 SSH 连接：
 
@@ -77,4 +77,4 @@ docker compose up -d --force-recreate
 
 ## License
 
-MIT © Alan Lyu – see [LICENSE](./LICENSE) file for details.
+MIT © Alan Lyu – see [LICENSE](LICENSE) file for details.

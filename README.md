@@ -12,7 +12,7 @@ DSH listens on container loopback `127.0.0.1:3080`; `socat` bridges it to contai
 
 ### Prerequisites
 
-Use a Linux host with Docker Engine, Compose v2, AppArmor, an SSH key pair, and repository access. Put only the login public key in `build/authorized_keys`; never add a private key or API token.
+Use a Linux host with Docker Engine, Compose v2, AppArmor, an SSH key pair, and repository access. Keep the private key on the host. See [First Run](docs/README_FIRST_RUN.md) for runtime public-key injection.
 
 Install the host AppArmor profile before starting the service:
 
@@ -27,10 +27,10 @@ Build and start the environment:
 ```sh
 docker compose config
 docker compose build --build-arg DSH_REF=master
-docker compose up -d
+SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose up -d
 ```
 
-`DSH_REF` may be a DSH branch or tag.
+`DSH_REF` may be a DSH branch or tag. The validated key is persisted in `dsh-data`; subsequent starts do not require `SSH_PUB_KEY`.
 
 Open DSH at `http://127.0.0.1:3080`, or connect over SSH:
 
@@ -75,4 +75,4 @@ Use `docker compose logs -f deepseek-harness` for logs and `docker compose down`
 
 ## License
 
-MIT © Alan Lyu – see [LICENSE](./LICENSE) file for details.
+MIT © Alan Lyu – see [LICENSE](LICENSE) file for details.

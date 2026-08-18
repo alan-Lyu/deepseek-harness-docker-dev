@@ -32,6 +32,8 @@ services:
       # The data directory must match DSH_HOME in the Dockerfile.
       - DSH_HOME=/data/dsh
       - DSH_PORT=3080
+      # Required on first run; the validated public key is then persisted in dsh-data.
+      - SSH_PUB_KEY=${SSH_PUB_KEY:-}
 
 volumes:
   dsh-data:      # Named volume managed by Docker.
