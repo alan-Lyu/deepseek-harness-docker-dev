@@ -1,0 +1,7 @@
+{
+  "name": "dsh-container-launcher",
+  "private": true,
+  "scripts": {
+    "dsh": "cd /home/developer/workspace && exec /usr/local/bin/dsh"
+  }
+}

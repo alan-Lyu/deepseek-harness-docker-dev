@@ -1,0 +1,41 @@
+# AppArmor profile for the DeepSeek Harness development container.
+#
+# Install this file on the HOST (not in the image):
+#   sudo install -m 0644 build/deepseek-harness /etc/apparmor.d/deepseek-harness
+#   sudo apparmor_parser -r /etc/apparmor.d/deepseek-harness
+#   sudo aa-status | grep deepseek-harness
+#
+# Then replace `apparmor=unconfined` in docker-compose.yml with:
+#   - apparmor=deepseek-harness
+#
+# `userns,` is the essential permission for bubblewrap's workspace-write
+# sandbox.  This profile deliberately permits the broad set of operations a
+# development container needs; Docker's namespaces, cgroup limits, seccomp
+# profile, dropped capabilities, and mounts should remain enabled as the outer
+# boundary.  Tighten this profile only after verifying the required toolchain
+# and Agent workflows.
+
+#include <tunables/global>
+
+profile deepseek-harness flags=(attach_disconnected,mediate_deleted) {
+  # Base runtime and ordinary file access inside the container.
+  #include <abstractions/base>
+  file,
+
+  # Development tools and the dsh server communicate over local/network sockets.
+  network,
+  unix,
+  dbus,
+
+  # bubblewrap creates a nested user/mount/pid namespace for workspace-write.
+  userns,
+  mount,
+  umount,
+  pivot_root,
+
+  # The image deliberately grants the developer passwordless sudo for toolchain
+  # administration, so these capabilities are not restricted by this profile.
+  capability,
+  ptrace,
+  signal,
+}
