@@ -6,15 +6,23 @@
 
 This repository provides a collaborative Docker environment built around DeepSeek Harness (DSH). It combines C/C++, Python, Rust, CMake/Ninja, cross-compilers, and QEMU for ARM and RISC-V targets. The image and container are rebuildable, while DSH state and the workspace can be reset independently.
 
-DSH listens on container loopback `127.0.0.1:3080`; `socat` bridges it to container port `3081`, and the host publishes only `127.0.0.1:3080`. SSH is public-key-only on host port `2222`, root login and forwarding are disabled, and no Docker socket is mounted. Use only `workspace/` for normal host sharing; keep sensitive paths and credentials out. AppArmor is enabled, while `userns_mode: host` and `seccomp=unconfined` are temporary DSH bubblewrap exceptions. This is a controlled development environment, not a hostile-code sandbox. Passwordless developer `sudo` is retained for convenience.
+DSH listens on container loopback `127.0.0.1:3080`; `socat` bridges it to container port `3081`, and the host publishes only `127.0.0.1:3080`. SSH is public-key-only on host port `2222`, root login and forwarding are disabled, and no Docker socket is mounted. Use only `workspace/` for normal host sharing; keep sensitive paths and credentials out. On Linux hosts an AppArmor profile is applied (`userns_mode: host` and `seccomp=unconfined` are temporary DSH bubblewrap exceptions); Windows/macOS Docker Desktop hosts run without the AppArmor/userns hardening. This is a controlled development environment, not a hostile-code sandbox. Passwordless developer `sudo` is retained for convenience.
 
 ## Usage
 
 ### Prerequisites
 
-Use a Linux host with Docker Engine, Compose v2, AppArmor, an SSH key pair, and repository access. Keep the private key on the host. See [First Run](docs/README_FIRST_RUN.md) for runtime public-key injection.
+Supported hosts:
 
-Install the host AppArmor profile before starting the service:
+| Platform | Requirements |
+| --- | --- |
+| Linux | Docker Engine with Compose v2, AppArmor, an SSH key pair |
+| Windows | Docker Desktop ≥ 4.42 with the WSL2 backend, an SSH key pair |
+| macOS (Intel / Apple Silicon) | Docker Desktop ≥ 4.42, an SSH key pair |
+
+Keep the private key on the host. See [First Run](docs/README_FIRST_RUN.md) for runtime public-key injection. Docker Desktop ≥ 4.42 is required because it applies the default seccomp profile; the base configuration disables it (`seccomp=unconfined`) for DSH `workspace-write`/bubblewrap.
+
+Install the host AppArmor profile before starting the service (**Linux only** — Windows/macOS hosts skip this step):
 
 ```sh
 sudo install -m 0644 build/deepseek-harness /etc/apparmor.d/deepseek-harness
@@ -22,12 +30,27 @@ sudo apparmor_parser -r /etc/apparmor.d/deepseek-harness
 sudo aa-status | grep deepseek-harness
 ```
 
-Build and start the environment:
+Build and start the environment. On Linux, merge the hardening overlay with the portable base:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.linux.yml config
+docker compose -f docker-compose.yml -f docker-compose.linux.yml build --build-arg DSH_REF=master
+SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+```
+
+On Windows (PowerShell) and macOS, use the base configuration directly:
 
 ```sh
 docker compose config
 docker compose build --build-arg DSH_REF=master
-SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose up -d
+docker compose up -d
+```
+
+PowerShell first run (pass the key through an environment variable):
+
+```powershell
+$env:SSH_PUB_KEY = (Get-Content -Raw "$HOME\.ssh\id_ed25519.pub")
+docker compose up -d
 ```
 
 `DSH_REF` may be a DSH branch or tag. The validated key is persisted in `dsh-data`; subsequent starts do not require `SSH_PUB_KEY`.
@@ -71,7 +94,7 @@ docker compose build --build-arg DSH_REF=<branch-or-tag>
 docker compose up -d --force-recreate
 ```
 
-Use `docker compose logs -f deepseek-harness` for logs and `docker compose down` to stop. `docker compose down -v` resets DSH by removing `dsh-data` while preserving `workspace/`.
+Use `docker compose logs -f deepseek-harness` for logs and `docker compose down` to stop. `docker compose down -v` resets DSH by removing `dsh-data` while preserving `workspace/`. On Linux hosts, add `-f docker-compose.yml -f docker-compose.linux.yml` to these commands.
 
 ## License
 
