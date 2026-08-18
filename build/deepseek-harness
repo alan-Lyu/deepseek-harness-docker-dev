@@ -10,10 +10,10 @@
 #
 # `userns,` is the essential permission for bubblewrap's workspace-write
 # sandbox.  This profile deliberately permits the broad set of operations a
-# development container needs; Docker's namespaces, cgroup limits, seccomp
-# profile, dropped capabilities, and mounts should remain enabled as the outer
-# boundary.  Tighten this profile only after verifying the required toolchain
-# and Agent workflows.
+# development container needs. Docker namespaces, the PID limit, and minimal
+# mounts remain the outer boundary. A narrow seccomp profile and capability
+# allowlist are follow-up work; tighten this profile only after verifying the
+# required toolchain and Agent workflows.
 
 #include <tunables/global>
 
@@ -33,8 +33,9 @@ profile deepseek-harness flags=(attach_disconnected,mediate_deleted) {
   umount,
   pivot_root,
 
-  # The image deliberately grants the developer passwordless sudo for toolchain
-  # administration, so these capabilities are not restricted by this profile.
+  # bubblewrap needs namespace and mount operations inside its nested sandbox.
+  # The developer has intentional passwordless sudo for toolchain administration;
+  # tighten these rules only after verifying required toolchain and Agent workflows.
   capability,
   ptrace,
   signal,
