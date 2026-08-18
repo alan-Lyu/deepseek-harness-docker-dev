@@ -1,0 +1,32 @@
+
+# Contents from Python.gitignore
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+*.egg-info/
+
+# Docker-specific additions
+
+docker-compose.override.yml
+docker-compose.*.yml
+docker-compose.*.env
+tmp/
+.cache/
+*.log
+*.pid
+
+# Docker directories
+workspace/
+
+# AI Agents
+.agents/
+.agent/
+*.md
+!README*.md

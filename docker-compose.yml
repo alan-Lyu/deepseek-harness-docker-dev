@@ -6,19 +6,25 @@ services:
       dockerfile: Dockerfile       # 指定 Dockerfile 文件
     container_name: deepseek-harness
     restart: unless-stopped
-    network_mode: host
+    userns_mode: host
+    security_opt:
+      - apparmor=unconfined
+      - seccomp=unconfined
+    # 3081 由容器内 socat 转发到 dsh 的 127.0.0.1:3080。
+    ports:
+      - "127.0.0.1:3080:3081"
+      - "127.0.0.1:2222:2222"
     volumes:
       # 持久化数据（会话、设置、token 等）
       - dsh-data:/data/dsh
       # 可选：挂载工作目录，供 Agent 读写（按需调整）
       - ./workspace:/home/developer/workspace
-    working_dir: /home/developer/workspace
     environment:
       # 数据目录（必须与 Dockerfile 中的 DSH_HOME 保持一致）
       - DSH_HOME=/data/dsh
       - DSH_PORT=3080
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:3080/health"]   # 若项目有健康检查接口
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3080/"]
       interval: 30s
       timeout: 10s
       retries: 3
