@@ -1,0 +1,10 @@
+# Linux-only hardening overlay. Merge with the portable base configuration:
+#   docker compose -f docker-compose.yml -f docker-compose.linux.yml <command>
+# AppArmor is a host-kernel feature and does not exist on Windows/macOS Docker Desktop.
+
+services:
+  deepseek-harness:
+    userns_mode: host
+    security_opt:
+      # Install build/deepseek-harness on the host before starting the service.
+      - apparmor=deepseek-harness

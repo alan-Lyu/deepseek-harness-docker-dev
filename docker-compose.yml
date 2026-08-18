@@ -1,3 +1,8 @@
+# Portable base configuration for Linux, Windows, and macOS (Docker Desktop).
+# Linux hosts should merge the hardening overlay for the AppArmor profile and
+# userns_mode: host:
+#   docker compose -f docker-compose.yml -f docker-compose.linux.yml <command>
+
 services:
   deepseek-harness:
     hostname: dsh-dev
@@ -7,13 +12,14 @@ services:
     container_name: deepseek-harness
     restart: unless-stopped
     pids_limit: 1024
-    userns_mode: host
     security_opt:
-      # Install build/deepseek-harness on the host before starting the service.
-      - apparmor=deepseek-harness
-      # bubblewrap workspace-write requires namespace syscalls blocked by Docker's default profile.
-      # Replace only after a tested, narrowly scoped custom seccomp profile is available.
+      # bubblewrap workspace-write requires namespace syscalls blocked by the default
+      # seccomp profile (applied on Linux and Docker Desktop >= 4.42); disable it on
+      # every platform.
       - seccomp=unconfined
+      # Linux-only hardening (apparmor=deepseek-harness + userns_mode: host) is added
+      # by docker-compose.linux.yml; AppArmor is a host-kernel feature that does not
+      # exist on Windows/macOS.
     logging:
       driver: local
       options:

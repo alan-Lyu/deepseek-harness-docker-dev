@@ -10,14 +10,19 @@ Compose only publishes host `127.0.0.1:3080` and SSH port `2222`.
 
 ## Layout & Development Commands
 
-- `docker-compose.yml` defines isolation, ports, volumes, and health checks.
+- `docker-compose.yml` is the portable base (Linux, Windows, macOS); `docker-compose.linux.yml`
+  adds Linux-only hardening (`apparmor=deepseek-harness`, `userns_mode: host`). The base keeps
+  `seccomp=unconfined` for bubblewrap on every platform.
 - `build/Dockerfile` installs toolchains and builds DSH.
 - `build/docker-entrypoint.sh` starts SSH, port bridging, and DSH as `developer`.
 - `workspace/` is the only host bind mount for development code; `/data/dsh` is the
   named `dsh-data` volume.
 
-Users run `docker compose config`, `docker compose build`, `docker compose up -d`, and
-`docker compose logs -f deepseek-harness` from the root. Pin an upstream branch/tag with
+Linux users run `docker compose -f docker-compose.yml -f docker-compose.linux.yml config`,
+`docker compose -f docker-compose.yml -f docker-compose.linux.yml build`, `docker compose -f
+docker-compose.yml -f docker-compose.linux.yml up -d`, and `docker compose logs -f
+deepseek-harness` from the root; Windows/macOS (Docker Desktop >= 4.42) run plain
+`docker compose ...`. Pin an upstream branch/tag with
 `docker compose build --build-arg DSH_REF=<ref>`. Docker requires host authority: agents provide
 commands and await results, never invoking Docker. Builds need network.
 
@@ -42,8 +47,9 @@ Never mount the Docker socket, host-sensitive paths, or secrets; do not commit t
 keys. Image/container rebuilds are safe; reset DSH state separately by removing
 `dsh-data`. Preserve `workspace/` unless its deletion is separately confirmed.
 
-`apparmor=deepseek-harness` must be installed on the host. `userns_mode: host` and
+`apparmor=deepseek-harness` must be installed on Linux hosts. `userns_mode: host` and
 `seccomp=unconfined` remain compatibility exceptions for DSH `workspace-write`/bubblewrap.
+Windows/macOS Docker Desktop hosts run the base config without AppArmor/userns hardening.
 Hardening proceeds by:
 
 1. Recording required namespaces, syscalls, and capabilities.
