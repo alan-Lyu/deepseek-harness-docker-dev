@@ -82,7 +82,12 @@ RUN git clone --depth 1 --branch "${DSH_REF}" https://github.com/deepseek-ai/dee
     && pnpm install --frozen-lockfile \
     && pnpm run build \
     && chmod 0755 /app/apps/cli/lib/bin.js \
-    && ln -s /app/apps/cli/lib/bin.js /usr/local/bin/dsh
+    && printf '%s\n' \
+       '#!/bin/sh' \
+       'export DSH_HOME="${DSH_HOME:-/data/dsh}"' \
+       'exec /app/apps/cli/lib/bin.js "$@"' \
+       > /usr/local/bin/dsh \
+    && chmod 0755 /usr/local/bin/dsh
 
 # ========== 6. Create the developer user ==========
 ARG DEV_UID=1000
@@ -104,7 +109,7 @@ RUN set -eux; \
     printf '%s\n' \
        'developer ALL=(ALL) NOPASSWD:ALL' \
        'Defaults:developer secure_path="/usr/local/cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' \
-       'Defaults:developer env_keep += "RUSTUP_HOME"' \
+       'Defaults:developer env_keep += "RUSTUP_HOME DSH_HOME PNPM_HOME"' \
        > /etc/sudoers.d/developer; \
     chmod 0440 /etc/sudoers.d/developer; \
     mkdir -p /home/developer/.ssh /home/developer/.cargo /home/developer/workspace; \
@@ -135,12 +140,13 @@ RUN chmod 600 /home/developer/.ssh/authorized_keys \
        'PermitTunnel no' \
        'PermitUserEnvironment no' \
        'X11Forwarding no' \
-       'SetEnv CARGO_HOME=/home/developer/.cargo RUSTUP_HOME=/usr/local/rustup PNPM_HOME=/data/dsh/pnpm' \
+       'SetEnv CARGO_HOME=/home/developer/.cargo RUSTUP_HOME=/usr/local/rustup PNPM_HOME=/data/dsh/pnpm DSH_HOME=/data/dsh' \
        > /etc/ssh/sshd_config.d/99-dsh.conf \
     && printf '%s\n' \
        'export CARGO_HOME=/home/developer/.cargo' \
        'export RUSTUP_HOME=/usr/local/rustup' \
        'export PNPM_HOME=/data/dsh/pnpm' \
+       'export DSH_HOME=/data/dsh' \
        'export PATH=/home/developer/.cargo/bin:/usr/local/cargo/bin:$PATH:$PNPM_HOME' \
        >> /home/developer/.profile \
     && chown developer:developer /home/developer/.profile \
