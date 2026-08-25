@@ -43,16 +43,11 @@ jobs:
         with:
           cosign-release: 'v2.2.4'
 
-      # Set up BuildKit Docker container builder to be able to build
-      # multi-platform images and export cache
+      # Set up the native amd64 BuildKit builder. The image currently targets
+      # linux/amd64; avoiding emulation keeps CI within the available timeout.
       # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f95db51fddba0c2d1ec667646a06c2ce06100226 # v3.0.0
-
-      # Set up QEMU so arm64 images can be built on the amd64 runner.
-      # https://github.com/docker/setup-qemu-action
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
@@ -79,7 +74,7 @@ jobs:
         uses: docker/build-push-action@0565240e2d4ab88bba5387d719585280857ece09 # v5.0.0
         with:
           context: ./build
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -100,3 +95,24 @@ jobs:
         # This step uses the identity token to provision an ephemeral certificate
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+  validate-compose:
+    name: Validate ${{ matrix.name }} Compose configuration
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            files: -f docker-compose.yml -f docker-compose.linux.yml
+          - name: Windows
+            files: -f docker-compose.yml
+          - name: macOS
+            files: -f docker-compose.yml
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Compose configuration
+        run: docker compose ${{ matrix.files }} config --quiet
