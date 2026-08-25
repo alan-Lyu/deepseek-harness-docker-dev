@@ -15,6 +15,7 @@ dist/
 
 docker-compose.override.yml
 docker-compose.*.yml
+!docker-compose.linux.yml
 docker-compose.*.env
 tmp/
 .cache/
@@ -32,3 +33,4 @@ workspace/
 *.md
 !README*.md
 !AGENTS.md
+!CLAUDE.md
