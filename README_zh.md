@@ -30,19 +30,21 @@ sudo apparmor_parser -r /etc/apparmor.d/deepseek-harness
 sudo aa-status | grep deepseek-harness
 ```
 
-构建并启动环境。在 Linux 上，将加固覆盖文件与基础配置合并使用：
+三个平台使用相同的命令构建镜像：
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.linux.yml config
-docker compose -f docker-compose.yml -f docker-compose.linux.yml build --build-arg DSH_REF=master
-SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+docker compose build --build-arg DSH_REF=master
 ```
 
-在 Windows（PowerShell）和 macOS 上，直接使用基础配置：
+启动服务时根据平台选择配置。Linux 叠加 AppArmor 和 user namespace 加固配置；Windows 和 macOS 使用基础配置：
 
 ```sh
+# Linux
+docker compose -f docker-compose.yml -f docker-compose.linux.yml config
+SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+
+# Windows/macOS
 docker compose config
-docker compose build --build-arg DSH_REF=master
 docker compose up -d
 ```
 
@@ -93,10 +95,11 @@ Dockerfile 是工具链版本和安装方式的唯一依据。如果项目需要
 
 ```sh
 docker compose build --build-arg DSH_REF=<branch-or-tag>
-docker compose up -d --force-recreate
+docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --force-recreate  # Linux
+docker compose up -d --force-recreate  # Windows/macOS
 ```
 
-使用 `docker compose logs -f deepseek-harness` 查看日志，使用 `docker compose down` 停止服务。若要显式重置 DSH 状态，执行 `docker compose down -v`；该命令会删除 `dsh-data`（包括会话、设置、token 和全局 pnpm 工具），但会保留 `workspace/`。在 Linux 宿主机上，这些命令需加上 `-f docker-compose.yml -f docker-compose.linux.yml`。
+查看日志和停止服务时使用相同的平台配置选择。`docker compose down -v` 会删除 `dsh-data` 并重置 DSH 状态，但会保留 `workspace/`。Linux overlay 只影响运行时安全配置，不改变镜像构建过程。
 
 ## License
 

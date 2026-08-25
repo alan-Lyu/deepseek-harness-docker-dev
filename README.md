@@ -30,19 +30,21 @@ sudo apparmor_parser -r /etc/apparmor.d/deepseek-harness
 sudo aa-status | grep deepseek-harness
 ```
 
-Build and start the environment. On Linux, merge the hardening overlay with the portable base:
+Build the image with the same command on all supported hosts:
 
 ```sh
-docker compose -f docker-compose.yml -f docker-compose.linux.yml config
-docker compose -f docker-compose.yml -f docker-compose.linux.yml build --build-arg DSH_REF=master
-SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+docker compose build --build-arg DSH_REF=master
 ```
 
-On Windows (PowerShell) and macOS, use the base configuration directly:
+Start the service with the platform-specific configuration. Linux adds the AppArmor and user namespace hardening overlay; Windows and macOS use the base configuration:
 
 ```sh
+# Linux
+docker compose -f docker-compose.yml -f docker-compose.linux.yml config
+SSH_PUB_KEY="$(cat ~/.ssh/id_ed25519.pub)" docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d
+
+# Windows/macOS
 docker compose config
-docker compose build --build-arg DSH_REF=master
 docker compose up -d
 ```
 
@@ -91,10 +93,11 @@ Upgrade DSH by rebuilding with a new branch or tag, then recreate the service:
 
 ```sh
 docker compose build --build-arg DSH_REF=<branch-or-tag>
-docker compose up -d --force-recreate
+docker compose -f docker-compose.yml -f docker-compose.linux.yml up -d --force-recreate  # Linux
+docker compose up -d --force-recreate  # Windows/macOS
 ```
 
-Use `docker compose logs -f deepseek-harness` for logs and `docker compose down` to stop. `docker compose down -v` resets DSH by removing `dsh-data` while preserving `workspace/`. On Linux hosts, add `-f docker-compose.yml -f docker-compose.linux.yml` to these commands.
+Use the same platform-specific file selection for `logs` and `down`. `docker compose down -v` resets DSH by removing `dsh-data` while preserving `workspace/`. The Linux overlay affects runtime security only; it does not change the image build.
 
 ## License
 
